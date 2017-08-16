@@ -1,0 +1,22 @@
+#!/bin/bash
+
+while [[ $# -gt 0 ]];
+do
+    case $1 in
+	--build)
+	    lein pom
+	    rm -rf classpath
+	    mvn dependency:copy-dependencies -DoutputDirectory=classpath
+	    lein run
+	    
+	    docker build -t abstractalchemist/social-app:latest .
+	    docker rm -f test && docker run abstractalchemist/social-app
+	    
+	    ;;
+	--clean)
+	    rm -rf classpath
+	    ;;
+    esac
+
+    shift
+done
