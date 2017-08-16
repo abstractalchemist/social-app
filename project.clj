@@ -5,10 +5,12 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [compojure "1.6.0"]
                  [korma "0.4.3"]
+                 [mysql/mysql-connector-java "5.1.43"]
                  [clj-json "0.5.3"]
                  [ring "1.6.0"]
                  [ring/ring-defaults "0.3.1"]]
-  :plugins [[lein-ring "0.9.7"]]
+  :plugins [[lein-ring "0.9.7"]
+            [lein-auto "0.1.3"]]
   :ring {:handler social-app.handler/app}
   :profiles
   {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
