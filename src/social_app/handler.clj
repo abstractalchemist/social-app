@@ -56,9 +56,9 @@
 (def get-profile
   ""
   (fn ([id] (get-profile id false))
-    ([id public?]
+    ([id private?]
      (let [[profile]
-           (if public?
+           (if private?
              (db/select user
                         (db/fields :name
                                    :email)
@@ -137,6 +137,14 @@
            :body "Invalid Information"}))
                       
 
+  (GET "/profile" [:as {{session-id :id} :session}]
+       {:status 200
+        :headers {"content-type" "application/json"}
+        :body (get-profile session-id true)})
+  
+  (POST "/wall" [])
+  (GET "/wall" [])
+  
   ;; get information assuming login
   (context "/:id" [id :as {{session-id :id logged-in :logged-in} :session}]
            (GET "/profile" []
