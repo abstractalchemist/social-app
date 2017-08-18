@@ -106,6 +106,7 @@
 
   ;; login url
   (POST "/login" [email password]
+  	(println "Using " email " and password " password)
         (let [hashed-input (hash-password email password)
               profile (internal-get {:email email})
               {:keys [password id]} profile]
