@@ -137,15 +137,24 @@
              :body "password information invalid"}))
           {:status 500
            :body "Invalid Information"}))
+
+  (POST "/logout" [:as {{session-id :id} :session}]
+        (if session-id
+          {:status 200
+           :session {:recreate true
+                     :id nil}}
+          {:status 200}))
                       
 
   (GET "/profile" [:as {{session-id :id :as session-map} :session headers :headers}]
-       {:status 200
-        :headers {"content-type" "application/json"}
-        :body (json/generate-string (get-profile session-id true))})
+       (if session-id
+         {:status 200
+          :headers {"content-type" "application/json"}
+          :body (json/generate-string (get-profile session-id true))}
+         {:status 500}))
   
-  (POST "/wall" [])
-  (GET "/wall" [])
+  (POST "/wall" [:as {{session-id :id} :session}])
+  (GET "/wall" [:as {{session-id :id} :session}])
   
   ;; get information assuming login
   (context "/:id" [id :as {{session-id :id logged-in :logged-in} :session}]
