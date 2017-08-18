@@ -1,4 +1,9 @@
+drop database if exists test;
+create database test;
+use test;
+
 drop table if exists t_user;
+drop table if exists t_wall;
 
 create table t_user ( id int unsigned auto_increment primary key,
 		      name varchar(100),

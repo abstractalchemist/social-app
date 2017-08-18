@@ -114,7 +114,8 @@
              :session {:recreate true
                        :id id
                        :logged-in true}
-             :body profile}
+             :headers { "content-type" "application/json" }
+             :body (json/generate-string profile)}
             {:status 500})))
 
   ;; create a new account
@@ -137,10 +138,10 @@
            :body "Invalid Information"}))
                       
 
-  (GET "/profile" [:as {{session-id :id} :session}]
+  (GET "/profile" [:as {{session-id :id :as session-map} :session headers :headers}]
        {:status 200
         :headers {"content-type" "application/json"}
-        :body (get-profile session-id true)})
+        :body (json/generate-string (get-profile session-id true))})
   
   (POST "/wall" [])
   (GET "/wall" [])
@@ -152,14 +153,14 @@
                   
                   {:status 200
                    :headers {"content-type" "application/json"}
-                   :body profile }
+                   :body (json/generate-string profile) }
                   {:status 404}))
            (POST "/profile" [])
            (GET "/wall" []
                 (if logged-in
                   {:status 200
                    :headers {"content-type" "application/json"}
-                   :body (get-wall id)}))
+                   :body (json/generate-string (get-wall id)) }))
            (DELETE "/wall/:id" []
                    (if logged-in
                      (do

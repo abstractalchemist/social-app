@@ -54,6 +54,18 @@
       (is (= status 200))))
   
   (testing "GET /login")
+
+  (testing "GET /profile"
+    (let [{:keys [headers status body]} (login "foo2@bar.com" "bad_password")]
+      (if (= status 200)
+        (let [cookie-map (get-cookie-map headers)]
+          (let [{:keys [status body]} (app (-> (mock/request :get "/profile")
+                                               (mock/header "Cookie" (str "ring-session=" (get cookie-map "ring-session")))))]
+            (is (= status 200))
+            (let [response (json/parse-string body)]
+              (is (= (get response "email") "foo2@bar.com"))))))))
+
+  (testing "GET /wall")
   
   (testing "GET /:id/wall")
   
@@ -64,6 +76,7 @@
       (when (= status 200)
         (let [cookie-map (get-cookie-map headers)
               response body]
+
           (let [{:keys [status body]} (app (-> (mock/request :get (str "/" (:id response)  "/profile"))
                                                (mock/header "Cookie" (str "ring-session=" (get cookie-map "ring-session")))))]
             (is (= status 200))
