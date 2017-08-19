@@ -61,6 +61,8 @@
                              (db/where conditions))]
     profile))
 
+(declare get-user-tags)
+
 (def get-profile
   ""
   (fn ([id] (get-profile id false))
@@ -75,7 +77,9 @@
                         (db/fields :name)
                         (db/where {:id id})))]
        (println profile)
-       profile))))
+       (if private?
+         (assoc profile :tags (get-user-tags id))
+         profile)))))
 
 (def TIME_FORMATTER
   (new SimpleDateFormat "yyyy-MM-dd HH:mm:ss"))
@@ -164,13 +168,15 @@
                 hash1 (hash-new-password passwd salt)
                 hash2 (hash-new-password passwd-verify salt)]
             (if (= hash1 hash2)
-            (do
-              (db/insert user
-                         (db/values {:name name
-                                     :email email
-                                     :salt salt
-                                     :password hash1}))
-              {:status 200})
+            (let [{:keys [generated_key]} (db/insert user
+                                                     (db/values {:name name
+                                                                 :email email
+                                                                 :salt salt
+                                                                 :password hash1}))]
+              {:status 200
+               :headers {"content-type" "application/json"}
+               :session {:recreate true
+                         :id generated_key}})
             {:status 500
              :body "password information invalid"}))
           {:status 500
@@ -182,9 +188,17 @@
            :session {:recreate true
                      :id nil}}
           {:status 200}))
-                      
+
+  (GET "/profiles" [:as {{session-id :id} :session}]
+       (if session-id
+         {:status 200
+          :headers {"content-type" "application/json"}
+          :body (json/generate-string (map (fn[{:keys [id name]}] {:name name :tags (get-user-tags id)}) (db/select user (db/fields :name :id) (db/where (not (= :id session-id))))))}
+         {:status 500}))
+       
 
   (GET "/profile" [:as {{session-id :id :as session-map} :session headers :headers}]
+       (println "Retrieving profile for " session-id)
        (if session-id
          {:status 200
           :headers {"content-type" "application/json"}

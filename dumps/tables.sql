@@ -19,7 +19,7 @@ create table t_wall ( id int unsigned auto_increment primary key,
 		      at date ) ENGINE=INNODB;
 
 create table t_tag ( id int unsigned auto_increment primary key,
-       	     	    tag varchar(100) ) ENGINE=INNODB;
+       	     	    tag varchar(100) UNIQUE ) ENGINE=INNODB;
 
 create table t_tag_user ( tag_id int unsigned references t_tag.id, 
        	     		  user_id int unsigned references t_tag_user ) ENGINE=INNODB;
