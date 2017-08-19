@@ -53,9 +53,10 @@
     (let [{:keys [status headers]} (login "foo2@bar.com" "bad_password")] 
       (is (= status 200))))
   
-  (testing "GET /login")
-
   (testing "GET /profile"
+    (let [{:keys [status]} (app (mock/request :get "/profile"))]
+      (is (= status 500)))
+
     (let [{:keys [headers status body]} (login "foo2@bar.com" "bad_password")]
       (if (= status 200)
         (let [cookie-map (get-cookie-map headers)]
@@ -86,6 +87,54 @@
                 (= (:email response) "foo2@bar.com"))))))))
 
   (testing "POST /:id/profile")
+
+  (testing "GET /profile/tags"
+    (let [{:keys [status]} (app (mock/request :get "/profile/tags"))]
+          (is (= status 500)))
+    (let [{:keys [headers status body]} (login "foo2@bar.com" "bad_password")]
+      (when (= status 200)
+        (let [cookie-map (get-cookie-map headers)
+              response body]
+          (let [{:keys [status body]} (app (-> (mock/request :get "/profile/tags")
+                                               (mock/header "Cookie" (str "ring-session=" (get cookie-map "ring-session")))))]
+            (is (= status 200)))))))
+  
+  (testing "POST /profile/tags/:tag"
+    (let [{:keys [status]} (app (mock/request :post "/profile/tags/saiyan"))]
+      (is (= status 500)))
+        
+    (let [{:keys [headers status body]} (login "foo2@bar.com" "bad_password")]
+      (when (= status 200)
+        (let [cookie-map (get-cookie-map headers)
+              response body]
+          (let [{:keys [status body]} (app (-> (mock/request :post "/profile/tags/computer_science")
+                                               (mock/header "Cookie" (str "ring-session=" (get cookie-map "ring-session")))))]
+            (is (= status 200))
+            (let [{:keys [status body]} (app (-> (mock/request :get "/profile/tags")
+                                                 (mock/header "Cookie" (str "ring-session=" (get cookie-map "ring-session")))))]
+              (is (= status 200))
+              (let [[response] (json/parse-string body)]
+                (println "response " response)
+                         
+                (is (= "computer_science" (get response "tag"))))))))))
+
+  (testing "DELETE /profile/tags/:tag"
+    (let [{:keys [status]} (app (mock/request :delete "/profile/tags/weiss"))]
+      (is (= status 500)))
+        
+    (let [{:keys [headers status body]} (login "foo2@bar.com" "bad_password")]
+      (when (= status 200)
+        (let [cookie-map (get-cookie-map headers)
+              response body]
+          (let [{:keys [status body]} (app (-> (mock/request :delete "/profile/tags/computer_science")
+                                               (mock/header "Cookie" (str "ring-session=" (get cookie-map "ring-session")))))]
+            (is (= status 200))
+            (let [{:keys [status body]} (app (-> (mock/request :get "/profile/tags")
+                                            (mock/header "Cookie" (str "ring-session=" (get cookie-map "ring-session")))))]
+              (= status 200)
+              (println body)
+              (is (= 0 (count (json/parse-string body))))))))))
+
   
 
   (testing "not-found route"
