@@ -142,13 +142,19 @@
   (when-let [[{tag_id :id}] (db/select tag (db/fields :id) (db/where {:tag _tag}))]
     
     (db/delete tag_user (db/where {:tag_id tag_id :user_id id}))))
-                                                                
+
+
+(defn sanitize
+  "sanitize the search terms to prevent sql and xss issues"
+  [terms]
+  terms)
+
 (defroutes app-routes
   (GET "/" [] "Hello World")
 
   ;; login url
   (POST "/login" [email password]
-  	(println "Using " email " and password " password)
+;;  	(println "Using " email " and password " password)
         (let [hashed-input (hash-password email password)
               profile (internal-get {:email email})
               {:keys [password id]} profile]
@@ -189,11 +195,29 @@
                      :id nil}}
           {:status 200}))
 
-  (GET "/profiles" [searchTerm:as {{session-id :id} :session}]
+  (GET "/profiles" [searchTerms :as {{session-id :id} :session}]
        (if session-id
-         {:status 200
-          :headers {"content-type" "application/json"}
-          :body (json/generate-string (map (fn[{:keys [id name]}] {:name name :tags (get-user-tags id)}) (db/select user (db/fields :name :id) (db/where (not (= :id session-id))))))}
+         (let [sanitize-term (sanitize searchTerms)
+               terms (db/select tag (db/where {:tag [like sanitize-term]}))]
+           (if (and (seq searchTerms) (count terms))
+                    {:status 200
+                     :headers {"content-type" "application/json"}
+                     :body (json/generate-string (map
+                                                  (fn[{:keys [id name]}]
+                                                    {:name name :tags (get-user-tags id)})
+                                                  (db/select user
+                                                             (db/fields :name :id)
+                                                             (db/where (and (not (= :id session-id))
+                                                                            {:tag [in terms]})))))}
+                    {:status 200
+                     :headers {"content-type" "application/json"}
+                     :body (json/generate-string (map
+                                                  (fn[{:keys [id name]}]
+                                                    {:name name :tags (get-user-tags id)})
+                                                  (db/select user
+                                                             (db/fields :name :id)
+                                                    (db/where (not (= :id session-id))))))}))
+                     
          {:status 500}))
        
 
