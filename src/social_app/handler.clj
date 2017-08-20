@@ -189,7 +189,7 @@
                      :id nil}}
           {:status 200}))
 
-  (GET "/profiles" [:as {{session-id :id} :session}]
+  (GET "/profiles" [searchTerm:as {{session-id :id} :session}]
        (if session-id
          {:status 200
           :headers {"content-type" "application/json"}
