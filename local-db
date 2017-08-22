@@ -1,0 +1,7 @@
+#!/bin/bash
+
+docker rm -f testdb
+docker volume rm dbdata
+
+docker volume create dbdata
+docker run --name testdb -v dbdata:/var/lib/mysql -v $(pwd)/dumps:/docker-entrypoint-initdb.d -e MYSQL_ROOT_PASSWORD=root -p 32768:3306 mariadb:latest

@@ -4,6 +4,7 @@
             [ring.mock.request :as mock]
             [clj-json.core :as json]
             [clojure.java.io :as io]
+            [social-app.db :refer [clear-table]]
             [social-app.handler :refer :all]))
 
 (clear-table)
@@ -23,20 +24,9 @@
   (app (-> (mock/request :post "/login")
            (mock/content-type "application/x-www-form-urlencoded")
            (mock/body (map->form-encoded {:email email :password password})))))
-(deftest test-app
-  
-  (testing "hashing"
-    (let [salt (generate-salt)
-          salt1 (string->byte-array salt)
-          salt2 (byte-array->string salt1)]
-      (is (= salt salt2))))
 
-  (testing "password hashing"
-    (let [password "P@SSW0RD%^"
-          salt (generate-salt)
-          hashed (hash-new-password password salt)]
-      (is (seq hashed))))
-      
+(deftest test-app
+        
   (testing "main route"
     (let [response (app (mock/request :get "/"))]
       (is (= (:status response) 200))

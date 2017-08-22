@@ -10,3 +10,4 @@ pom.xml.asc
 /.nrepl-port
 *~
 \#*
+/dumps/tables_samples.sql

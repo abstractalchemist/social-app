@@ -11,16 +11,18 @@ create table t_user ( id int unsigned auto_increment primary key,
 		      name varchar(100),
        	     	      email varchar(100) unique key,
 		      password varchar(100),
-		      salt varchar(1000)) ENGINE=INNODB;
+		      salt varchar(1000),
+		      algorithm varchar(100)) ENGINE=InnoDB;
 
 create table t_wall ( id int unsigned auto_increment primary key,
        	     	      user_id int unsigned references t_user.id,
 		      comment longtext,
-		      at date ) ENGINE=INNODB;
+		      at date ) ENGINE=InnoDB;
 
 create table t_tag ( id int unsigned auto_increment primary key,
-       	     	    tag varchar(100) UNIQUE ) ENGINE=INNODB;
+       	     	    tag varchar(100) UNIQUE ) ENGINE=InnoDB;
 
 create table t_tag_user ( tag_id int unsigned references t_tag.id, 
-       	     		  user_id int unsigned references t_tag_user ) ENGINE=INNODB;
+       	     		  user_id int unsigned references t_tag_user ) ENGINE=InnoDB;
 		    
+
