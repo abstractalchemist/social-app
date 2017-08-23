@@ -21,8 +21,7 @@
                                      (db/fields :salt)
                                      (db/where {:email email}))]
      (hash-new-password password salt hash-algo))))
-
-
+                                 
 
 (defn sanitize
   "sanitize the search terms to prevent sql and xss issues"
@@ -78,20 +77,17 @@
 
   (GET "/profiles" [searchTerms :as {{session-id :id} :session}]
        (if session-id
-         (let [sanitize-term (sanitize searchTerms)
-               terms (db/select tag (db/where {:tag [like sanitize-term]}))]
+         (let [sanitize-term (sanitize searchTerms)]
            (letfn [(user-map [{:keys [id name]}]
                      (println "mapping " name " to " id)
                      {:name name :tags (get-user-tags id) :id id})]
-             (if (and (seq searchTerms) (count terms))
+             (if (and (seq searchTerms))
                {:status 200
                 :headers {"content-type" "application/json"}
                 :body (json/generate-string (map
                                              user-map
-                                             (db/select user
-                                                        (db/fields :name :id)
-                                                        (db/where (and (not (= :id session-id))
-                                                                       {:tag [in terms]})))))}
+                                             (search session-id sanitize-term)))}
+                                                                       
                {:status 200
                 :headers {"content-type" "application/json"}
                 :body (json/generate-string (map

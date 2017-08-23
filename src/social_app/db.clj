@@ -94,3 +94,20 @@
   (when-let [[{tag_id :id}] (db/select tag (db/fields :id) (db/where {:tag _tag}))]
     
     (db/delete tag_user (db/where {:tag_id tag_id :user_id id}))))
+
+
+(defn search
+  ""
+  [user-id & terms]
+  (let [term-map (db/subselect tag_user
+                            (db/fields :user_id)
+                            (db/where (and (not (= :user_id user-id))
+                                           {:tag_id [in (db/subselect tag
+                                                                      (db/fields :id)
+                                                                      (db/where {:tag [like terms]}))]})))]
+    (when (< 0 (count term-map))
+      (db/select user
+                 (db/fields :id
+                            :name)
+                 (db/where {:id [in term-map]})))))
+                                                                 
