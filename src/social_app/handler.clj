@@ -15,7 +15,7 @@
   (new SimpleDateFormat "yyyy-MM-dd HH:mm:ss"))
 
 (defn hash-password
-  ([email password] (hash-password email password HASH_ALGO))
+  ([email password] (hash-password email password (:algorithm (first (db/select user (db/fields :algorithm) (db/where {:email email}))))))
   ([email password hash-algo]
    (let [[{:keys [salt]}] (db/select user
                                      (db/fields :salt)
@@ -80,25 +80,26 @@
        (if session-id
          (let [sanitize-term (sanitize searchTerms)
                terms (db/select tag (db/where {:tag [like sanitize-term]}))]
-           (if (and (seq searchTerms) (count terms))
-                    {:status 200
-                     :headers {"content-type" "application/json"}
-                     :body (json/generate-string (map
-                                                  (fn[{:keys [id name]}]
-                                                    {:name name :tags (get-user-tags id)})
-                                                  (db/select user
-                                                             (db/fields :name :id)
-                                                             (db/where (and (not (= :id session-id))
-                                                                            {:tag [in terms]})))))}
-                    {:status 200
-                     :headers {"content-type" "application/json"}
-                     :body (json/generate-string (map
-                                                  (fn[{:keys [id name]}]
-                                                    {:name name :tags (get-user-tags id)})
-                                                  (db/select user
-                                                             (db/fields :name :id)
-                                                    (db/where (not (= :id session-id))))))}))
-                     
+           (letfn [(user-map [{:keys [id name]}]
+                     (println "mapping " name " to " id)
+                     {:name name :tags (get-user-tags id) :id id})]
+             (if (and (seq searchTerms) (count terms))
+               {:status 200
+                :headers {"content-type" "application/json"}
+                :body (json/generate-string (map
+                                             user-map
+                                             (db/select user
+                                                        (db/fields :name :id)
+                                                        (db/where (and (not (= :id session-id))
+                                                                       {:tag [in terms]})))))}
+               {:status 200
+                :headers {"content-type" "application/json"}
+                :body (json/generate-string (map
+                                             user-map
+                                             (db/select user
+                                                        (db/fields :name :id)
+                                                        (db/where (not (= :id session-id))))))})))
+           
          {:status 500}))
        
 
@@ -140,6 +141,12 @@
                   {:status 200
                    :headers {"content-type" "application/json"}
                    :body (json/generate-string profile) }
+                  {:status 404}))
+           (GET "/tags" []
+                (if-let [profile (get-profile id)]
+                  {:status 200
+                   :headers {"content-type" "application/json"}
+                   :body (json/generate-string (get-user-tags id))}
                   {:status 404}))
            (POST "/profile" [])
            (GET "/wall" []

@@ -27,7 +27,7 @@
   ([password salt hash-algo]
    {:pre [(seq password) (seq salt)]}
    
-   
+   (println "***** using " hash-algo " *******")
    (let [md (MessageDigest/getInstance hash-algo)
          passwd-byte (. password getBytes)
          salt-byte (string->byte-array salt)]
