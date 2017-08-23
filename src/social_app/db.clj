@@ -79,10 +79,11 @@
   "add a tag to a user profile"
   [id _tag]
   ;; check if a tag exists, create it
-  (let [tag_info (let [[info] (db/select tag (db/fields :id)
-                                         (db/where {:tag _tag}))]
-                   (or info (let [{:keys [generated_key]} (db/insert tag (db/values {:tag _tag}))]
-                              generated_key)))]
+  (let [{tag_info :id} (let [[info] (db/select tag (db/fields :id)
+                                               (db/where {:tag _tag}))]
+                         (or info (let [{:keys [generated_key]} (db/insert tag (db/values {:tag _tag}))]
+                                    generated_key)))]
+    (println "inserting map " tag_info " for user " id)
     (db/insert tag_user (db/values {:tag_id tag_info :user_id id}))))
 
         
