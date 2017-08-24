@@ -5,21 +5,17 @@
             [compojure.route :as route]
             [clojure.java.io :as io]
             [clj-json.core :as json]
-            [korma.core :as db]
-            [korma.db :as other]
             [social-app.utils :refer [HASH_ALGO string->byte-array byte-array->string hash-new-password generate-salt]]
-            [social-app.db :refer :all]
+            [social-app.db :refer [internal-get add-user get-user-tags search get-all-users get-profile add-tag delete-tag get-wall update-wall delete-wall-comment]]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]))
 
 (def TIME_FORMATTER
   (new SimpleDateFormat "yyyy-MM-dd HH:mm:ss"))
 
 (defn hash-password
-  ([email password] (hash-password email password (:algorithm (first (db/select user (db/fields :algorithm) (db/where {:email email}))))))
+  ([email password] (hash-password email password (:algorithm (internal-get {:email email}))))
   ([email password hash-algo]
-   (let [[{:keys [salt]}] (db/select user
-                                     (db/fields :salt)
-                                     (db/where {:email email}))]
+   (let [{:keys [salt]} (internal-get {:email email})]
      (hash-new-password password salt hash-algo))))
                                  
 
@@ -53,12 +49,11 @@
                 hash1 (hash-new-password passwd salt)
                 hash2 (hash-new-password passwd-verify salt)]
             (if (= hash1 hash2)
-            (let [{:keys [generated_key]} (db/insert user
-                                                     (db/values {:name name
-                                                                 :email email
-                                                                 :salt salt
-                                                                 :password hash1
-                                                                 :algorithm HASH_ALGO }))]
+              (let [generated_key (add-user {:name name
+                                             :email email
+                                             :salt salt
+                                             :password hash1
+                                             :algorithm HASH_ALGO })]
               {:status 200
                :headers {"content-type" "application/json"}
                :session {:recreate true
@@ -91,10 +86,8 @@
                {:status 200
                 :headers {"content-type" "application/json"}
                 :body (json/generate-string (map
-                                             user-map
-                                             (db/select user
-                                                        (db/fields :name :id)
-                                                        (db/where (not (= :id session-id))))))})))
+                                             user-map 
+                                             (get-all-users (not (= :id session-id)))))})))
            
          {:status 500}))
        
@@ -153,17 +146,16 @@
            (DELETE "/wall/:id" []
                    (if logged-in
                      (do
-                       (db/delete wall (db/where {:id id}))
+                       (delete-wall-comment {:id id})
                        {:status 200})))
            (POST "/wall" [:as body]
                  (if (= session-id id)
                    (let [input (json/parsed-seq (io/reader body))]
-                     (db/insert wall
-                                (db/values {:comment (get input "comment")
-                                            :at (. TIME_FORMATTER (Calendar/getInstance))}))
+                     (update-wall {:comment (get input "comment")
+                                   :at (. TIME_FORMATTER (Calendar/getInstance))})
                      {:status 200})
                    {:status 500})))
-                                            
+  
 
   ;; other stuff
   (route/not-found "Not Found"))

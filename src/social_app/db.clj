@@ -2,7 +2,7 @@
   (:require [korma
              [core :as db]
              [db :as other]]))
-
+ 
 (declare get-user-tags)
 
 (other/defdb test
@@ -26,16 +26,24 @@
   (db/delete tag_user)
   (db/delete tag))
 
+(defn add-user[user-data]
+  (:generated_key (db/insert user (db/values user-data))))
 
+(defmacro get-all-users[conditions]
+  `(db/select user (db/fields :name
+                              :id)
+              (db/where ~conditions)))
+ 
 (defn internal-get[conditions]
-  (let [[profile] (db/select user
-                             (db/fields :id
-                                        :name
-                                        :email
-                                        :salt
-                                        :password)
-                             (db/where conditions))]
-    profile))
+  (first
+   (db/select user
+              (db/fields :id
+                         :name
+                         :email
+                         :salt
+                         :password
+                         :algorithm)
+              (db/where conditions))))
 
 
 (def get-profile
@@ -55,6 +63,12 @@
        (if private?
          (assoc profile :tags (get-user-tags id))
          profile)))))
+
+(defn update-wall[values]
+  (:generated_key (db/insert wall (db/where values))))
+
+(defn delete-wall-comment[id]
+  (db/delete wall (db/where {:id id})))
 
 (defn get-wall
   "get a user wall"
@@ -79,9 +93,11 @@
   "add a tag to a user profile"
   [id _tag]
   ;; check if a tag exists, create it
-  (let [{tag_info :id} (let [[info] (db/select tag (db/fields :id)
+  (let [tag_info (let [[info] (db/select tag (db/fields :id)
                                                (db/where {:tag _tag}))]
-                         (or info (let [{:keys [generated_key]} (db/insert tag (db/values {:tag _tag}))]
+                         
+                   (or (:id info) (let [{:keys [generated_key]} (db/insert tag (db/values {:tag _tag}))]
+                                    (println "Using generated key: " generated_key)
                                     generated_key)))]
     (println "inserting map " tag_info " for user " id)
     (db/insert tag_user (db/values {:tag_id tag_info :user_id id}))))
