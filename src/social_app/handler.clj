@@ -5,8 +5,9 @@
             [compojure.route :as route]
             [clojure.java.io :as io]
             [clj-json.core :as json]
+            [korma.core :as db]
             [social-app.utils :refer [HASH_ALGO string->byte-array byte-array->string hash-new-password generate-salt]]
-            [social-app.db :refer [internal-get add-user get-user-tags search get-all-users get-profile add-tag delete-tag get-wall update-wall delete-wall-comment]]
+            [social-app.db-lite :refer [internal-get add-user get-user-tags search get-all-users get-profile add-tag delete-tag get-wall update-wall delete-wall-comment]]
             [ring.middleware.defaults :refer [wrap-defaults site-defaults]]))
 
 (def TIME_FORMATTER
@@ -76,6 +77,7 @@
            (letfn [(user-map [{:keys [id name]}]
                      (println "mapping " name " to " id)
                      {:name name :tags (get-user-tags id) :id id})]
+             (println "using session-id " session-id)
              (if (and (seq searchTerms))
                {:status 200
                 :headers {"content-type" "application/json"}
@@ -86,8 +88,9 @@
                {:status 200
                 :headers {"content-type" "application/json"}
                 :body (json/generate-string (map
-                                             user-map 
-                                             (get-all-users (not (= :id session-id)))))})))
+                                             user-map
+                                             (db/exec-raw (str "select id,name from t_user where not t_user.id = " session-id) :results)))})))
+                                             ;;(get-all-users (not (= :id session-id)))))})))
            
          {:status 500}))
        
